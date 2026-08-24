@@ -20,7 +20,7 @@ npx deepsec init
 
 The command guides you through everything. It asks you to pick an AI model
 (with benchmark scores and prices to compare) and how to pay for model
-usage — your own OpenAI/Anthropic API key, or Vercel AI Gateway — and then
+usage — your own OpenAI, Anthropic, or BytePlus API key, or Vercel AI Gateway — and then
 works unattended: it studies your codebase, scans it, and runs the AI
 review. The only thing it adds to your repository is a `.deepsec/` folder
 where all of its state and findings live.
@@ -50,8 +50,8 @@ pnpm deepsec export --format md-dir --out ./findings
 ```
 
 The [getting started guide](https://github.com/vercel-labs/deepsec/blob/main/docs/getting-started.md)
-covers all of this in more detail, including using your own OpenAI or
-Anthropic API key and running from CI or a coding agent.
+covers all of this in more detail, including using your own OpenAI, Anthropic, or
+BytePlus API key and running from CI or a coding agent.
 
 ## Docs
 
@@ -78,7 +78,7 @@ absolute machine-readable paths.
 
 By default, deepsec routes model calls through Vercel AI Gateway, which
 gives access to every major model without provider-specific keys. You can
-instead bring your own key — OpenAI, Anthropic, or a custom HTTPS
+instead bring your own key — OpenAI, Anthropic, BytePlus (`BYTEPLUS_API_KEY`), or a custom HTTPS
 provider — by passing `--model-auth direct` with `--ai-provider` and
 `--ai-api-key-env` to `init`; no Vercel account is needed in that mode.
 Deepsec only ever stores the *name* of the environment variable holding

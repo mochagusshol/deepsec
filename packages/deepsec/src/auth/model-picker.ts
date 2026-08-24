@@ -229,12 +229,14 @@ export async function resolveModelProfile(options: {
 export function inferModelHarness(slug: string): ModelHarness {
   if (/^(?:openai\/)?gpt-/i.test(slug)) return "codex";
   if (/^(?:anthropic\/)?claude-/i.test(slug)) return "claude";
+  if (/^(?:byteplus\/|ep-|doubao)/i.test(slug)) return "codex";
   if (slug.includes("/")) return "pi";
   return "pi";
 }
 
 function modelForHarness(slug: string, harness: ModelHarness): string {
   if (harness === "codex" && slug.startsWith("openai/")) return slug.slice("openai/".length);
+  if (harness === "codex" && slug.startsWith("byteplus/")) return slug.slice("byteplus/".length);
   if (harness === "claude" && slug.startsWith("anthropic/")) {
     return slug.slice("anthropic/".length);
   }

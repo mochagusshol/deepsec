@@ -64,6 +64,7 @@ const PI_CUSTOM_BASE_URL_ENV = "DEEPSEC_PI_AI_BASE_URL";
 export interface BrokeredCredentials {
   anthropicToken?: string;
   openaiToken?: string;
+  byteplusToken?: string;
   aiGatewayToken?: string;
   customToken?: {
     envName: string;
@@ -94,6 +95,7 @@ export function resolveBrokeredCredentials(
   }
   const anthropicToken = process.env.ANTHROPIC_AUTH_TOKEN;
   const explicitOpenai = process.env.OPENAI_API_KEY;
+  const byteplusToken = process.env.BYTEPLUS_API_KEY;
   const aiGatewayToken = agentType === "pi" ? process.env.AI_GATEWAY_API_KEY : undefined;
   const customToken =
     agentType === "pi" && options.aiApiKeyEnv && process.env[options.aiApiKeyEnv]
@@ -103,7 +105,7 @@ export function resolveBrokeredCredentials(
   // user hasn't pinned an explicit OpenAI key. Outside codex this fallback
   // would never hit the network anyway, but scoping it keeps intent clear.
   const openaiToken = explicitOpenai ?? (agentType === "codex" ? anthropicToken : undefined);
-  return { anthropicToken, openaiToken, aiGatewayToken, customToken };
+  return { anthropicToken, openaiToken, byteplusToken, aiGatewayToken, customToken };
 }
 
 const PROXY_PORT = 8787;
@@ -150,6 +152,12 @@ export function buildSandboxEnv(
   }
   if (credentials.openaiToken) {
     env["OPENAI_API_KEY"] = BROKERED_TOKEN_PLACEHOLDER;
+  }
+  if (credentials.byteplusToken) {
+    env["BYTEPLUS_API_KEY"] = BROKERED_TOKEN_PLACEHOLDER;
+    if (agentType === "codex" && !env["OPENAI_API_KEY"]) {
+      env["OPENAI_API_KEY"] = BROKERED_TOKEN_PLACEHOLDER;
+    }
   }
   if (agentType === "pi") {
     if (credentials.aiGatewayToken) {

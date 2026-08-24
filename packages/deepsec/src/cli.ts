@@ -299,7 +299,7 @@ program
   )
   .option(
     "--ai-provider <provider>",
-    "Pi: provider to override for --ai-base-url / --ai-api-key-env (e.g. openai)",
+    "Provider to override for --ai-base-url / --ai-api-key-env (e.g. openai, byteplus, anthropic)",
   )
   .option(
     "--ai-base-url <url>",

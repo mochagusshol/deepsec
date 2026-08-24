@@ -99,6 +99,32 @@ describe("resolveModelRoute", () => {
     expect(env.ANTHROPIC_UPSTREAM_BASE_URL).toBe("https://ai-gateway.vercel.sh");
   });
 
+  it("resolves a direct byteplus route to OPENAI_API_KEY and BYTEPLUS_API_KEY", async () => {
+    const resolved = await resolveModelRoute(
+      { mode: "direct", provider: "byteplus" },
+      { agentType: "codex", env: { BYTEPLUS_API_KEY: "bp-secret" } },
+    );
+    expect(resolved.environment.BYTEPLUS_API_KEY).toBe("bp-secret");
+    expect(resolved.environment.OPENAI_API_KEY).toBe("bp-secret");
+    expect(resolved.environment.OPENAI_BASE_URL).toBe(
+      "https://ark.ap-southeast.bytepluses.com/api/v3",
+    );
+    expect(resolved.broker).toEqual({
+      host: "ark.ap-southeast.bytepluses.com",
+      placeholderEnv: "BYTEPLUS_API_KEY",
+      header: { name: "authorization", value: "Bearer bp-secret" },
+    });
+  });
+
+  it("rejects direct byteplus route with claude-agent-sdk harness", async () => {
+    await expect(
+      resolveModelRoute(
+        { mode: "direct", provider: "byteplus" },
+        { agentType: "claude-agent-sdk", env: { BYTEPLUS_API_KEY: "bp-secret" } },
+      ),
+    ).rejects.toThrow(/not compatible with --agent claude/);
+  });
+
   it("rejects insecure custom endpoints", async () => {
     await expect(
       resolveModelRoute(

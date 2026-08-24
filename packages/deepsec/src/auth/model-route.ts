@@ -48,6 +48,10 @@ const DEFAULTS: Record<string, { env: string; baseUrl: string }> = {
     env: "OPENAI_API_KEY",
     baseUrl: "https://api.openai.com/v1",
   },
+  byteplus: {
+    env: "BYTEPLUS_API_KEY",
+    baseUrl: "https://ark.ap-southeast.bytepluses.com/api/v3",
+  },
 };
 
 function checkedUrl(value: string, label: string): URL {
@@ -72,8 +76,12 @@ export function modelRouteCompatibilityError(
   if (route.mode === "direct" && route.provider === "anthropic" && agentType === "codex") {
     return "Direct Anthropic credentials are not compatible with --agent codex";
   }
-  if (route.mode === "direct" && route.provider === "openai" && agentType === "claude-agent-sdk") {
-    return "Direct OpenAI credentials are not compatible with --agent claude";
+  if (
+    route.mode === "direct" &&
+    (route.provider === "openai" || route.provider === "byteplus") &&
+    agentType === "claude-agent-sdk"
+  ) {
+    return "Direct OpenAI and BytePlus credentials are not compatible with --agent claude";
   }
   return undefined;
 }
@@ -160,13 +168,16 @@ export async function resolveModelRoute(
     const baseUrl = route.baseUrl ?? defaults.baseUrl;
     const url = checkedUrl(baseUrl, "AI base URL");
     const isAnthropic = route.provider === "anthropic";
+    const isBytePlus = route.provider === "byteplus";
     return {
       route: { ...route, apiKeyEnv: credentialEnv, baseUrl },
       credentialEnv,
       credential,
       environment: isAnthropic
         ? { ANTHROPIC_API_KEY: credential, ANTHROPIC_BASE_URL: baseUrl }
-        : { OPENAI_API_KEY: credential, OPENAI_BASE_URL: baseUrl },
+        : isBytePlus
+          ? { BYTEPLUS_API_KEY: credential, OPENAI_API_KEY: credential, OPENAI_BASE_URL: baseUrl }
+          : { OPENAI_API_KEY: credential, OPENAI_BASE_URL: baseUrl },
       broker: {
         host: url.hostname,
         placeholderEnv: credentialEnv,

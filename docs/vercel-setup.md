@@ -103,7 +103,7 @@ Deepsec maps the Gateway credential to the environment expected by Codex,
 Claude, or Pi. Sandbox workers receive only a placeholder. The real bearer
 token is injected at the allowed Gateway host by the host-side broker.
 
-### Your own OpenAI or Anthropic credential
+### Your own OpenAI, BytePlus, or Anthropic credential
 
 Name the environment variable that holds the key. The name is persisted; the
 value is not.
@@ -114,6 +114,16 @@ MY_OPENAI_KEY=... npx deepsec init \
   --model-auth direct \
   --ai-provider openai \
   --ai-api-key-env MY_OPENAI_KEY
+```
+
+BytePlus ModelArk (OpenAI-compatible) works similarly:
+
+```bash
+MY_BYTEPLUS_KEY=... npx deepsec init \
+  --agent codex \
+  --model-auth direct \
+  --ai-provider byteplus \
+  --ai-api-key-env MY_BYTEPLUS_KEY
 ```
 
 Anthropic works the same way:
@@ -133,7 +143,7 @@ again or put it in `.deepsec/.env.local`:
 MY_OPENAI_KEY=...
 ```
 
-Direct OpenAI routes require Codex; direct Anthropic routes require Claude.
+Direct OpenAI and BytePlus routes require Codex or Pi; direct Anthropic routes require Claude or Pi.
 Setup rejects incompatible agent/provider combinations before scanning.
 
 ### Custom HTTPS provider

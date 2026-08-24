@@ -79,6 +79,7 @@ describe("assertAgentCredential", () => {
     saved = {
       ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN,
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      BYTEPLUS_API_KEY: process.env.BYTEPLUS_API_KEY,
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
       AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
       MARTIAN_API_KEY: process.env.MARTIAN_API_KEY,
@@ -89,6 +90,7 @@ describe("assertAgentCredential", () => {
     };
     delete process.env.ANTHROPIC_AUTH_TOKEN;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.BYTEPLUS_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.AI_GATEWAY_API_KEY;
     delete process.env.MARTIAN_API_KEY;
@@ -150,6 +152,16 @@ describe("assertAgentCredential", () => {
   it("passes for codex when OPENAI_API_KEY is set", () => {
     process.env.OPENAI_API_KEY = "x";
     expect(() => assertAgentCredential("codex")).not.toThrow();
+  });
+
+  it("passes for codex when BYTEPLUS_API_KEY is set", () => {
+    process.env.BYTEPLUS_API_KEY = "bp-key";
+    expect(() => assertAgentCredential("codex")).not.toThrow();
+  });
+
+  it("passes for pi when BYTEPLUS_API_KEY is set", () => {
+    process.env.BYTEPLUS_API_KEY = "bp-key";
+    expect(() => assertAgentCredential("pi")).not.toThrow();
   });
 
   it("passes for codex when only ANTHROPIC token is set (gateway fallback)", () => {

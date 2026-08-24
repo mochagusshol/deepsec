@@ -267,6 +267,7 @@ export function assertAgentCredential(
   const anthropic = process.env.ANTHROPIC_AUTH_TOKEN;
   const anthropicApi = process.env.ANTHROPIC_API_KEY;
   const openai = process.env.OPENAI_API_KEY;
+  const byteplus = process.env.BYTEPLUS_API_KEY;
   const custom = options.aiApiKeyEnv ? process.env[options.aiApiKeyEnv] : undefined;
 
   // A selected route has already made precedence explicit. In particular,
@@ -279,27 +280,33 @@ export function assertAgentCredential(
         ? "AI_GATEWAY_API_KEY"
         : options.modelRoute.provider === "anthropic"
           ? "ANTHROPIC_API_KEY"
-          : "OPENAI_API_KEY");
+          : options.modelRoute.provider === "byteplus"
+            ? "BYTEPLUS_API_KEY"
+            : "OPENAI_API_KEY");
     if (process.env[keyEnv]) return;
     throw new Error(`Selected ${options.modelRoute.provider} model route requires ${keyEnv}`);
   }
 
   if (isCodex(agentType)) {
-    // Codex prefers OPENAI_API_KEY; AI Gateway issues a single token that
+    // Codex prefers OPENAI_API_KEY or BYTEPLUS_API_KEY; AI Gateway issues a single token that
     // authenticates both backends, so an ANTHROPIC token is also accepted.
-    if (openai || anthropic) return;
+    if (openai || anthropic || byteplus) return;
     if (!options.inSandbox && hasLocalCodexAgent()) return;
     throw new Error(
       `Missing AI credentials for --agent codex.\n` +
         `\n` +
-        `  Add to .env.local:    AI_GATEWAY_API_KEY=vck_…   (or OPENAI_API_KEY=…)\n` +
+        `  Add to .env.local:    AI_GATEWAY_API_KEY=vck_…   (or OPENAI_API_KEY=… or BYTEPLUS_API_KEY=…)\n` +
         `  Setup: ${SETUP_DOC_URL}`,
     );
   }
 
   if (isPi(agentType)) {
     if (gateway || custom) return;
-    if (!options.inSandbox && (anthropic || anthropicApi || openai || hasLocalPiAgent())) return;
+    if (
+      !options.inSandbox &&
+      (anthropic || anthropicApi || openai || byteplus || hasLocalPiAgent())
+    )
+      return;
     const customHint = options.aiApiKeyEnv
       ? `, or set ${options.aiApiKeyEnv}=… for the selected --ai-api-key-env`
       : "";

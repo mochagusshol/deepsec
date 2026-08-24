@@ -39,13 +39,14 @@ For benchmark-backed headless selection, use a profile:
 npx deepsec init --yes --model-profile value --output jsonl
 ```
 
-Direct OpenAI and Anthropic credentials automatically restrict profiles to a
+Direct OpenAI, BytePlus, and Anthropic credentials automatically restrict profiles to a
 compatible Codex or Claude harness; custom routes restrict them to Pi.
 
 The built-in backends work with Vercel AI Gateway through the linked
-workspace's OIDC credential. The model credential route is independent of the
-Vercel/Sandbox project link and is persisted as non-secret `ai` config. Direct
-OpenAI/Anthropic and custom Pi routes are documented in
+workspace's OIDC credential, or with direct OpenAI/BytePlus/Anthropic provider keys.
+Direct OpenAI and BytePlus (`BYTEPLUS_API_KEY`) use OpenAI-compatible API endpoints
+(`https://ark.ap-southeast.bytepluses.com/api/v3` for BytePlus ModelArk). Direct
+OpenAI/BytePlus and custom Pi routes are documented in
 [vercel-setup](vercel-setup.md).
 
 There is also a `local` route (`--model-auth local`, or "Use local
