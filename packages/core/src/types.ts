@@ -225,6 +225,7 @@ export interface Finding {
   description: string;
   lineNumbers: number[];
   recommendation: string;
+  patch?: string;
   confidence: Confidence;
   triage?: Triage;
   revalidation?: Revalidation;

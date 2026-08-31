@@ -44,6 +44,7 @@ export const findingSchema = z.object({
   description: z.string(),
   lineNumbers: z.array(z.number()),
   recommendation: z.string(),
+  patch: z.string().optional(),
   confidence: z.enum(["high", "medium", "low"]),
   triage: z
     .object({

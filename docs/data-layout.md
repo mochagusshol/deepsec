@@ -127,7 +127,8 @@ The on-disk path mirrors the source path under `<rootPath>` plus a
 | `title` | `string` | One-sentence summary. |
 | `description` | `string` | Full explanation. |
 | `lineNumbers` | `number[]` | 1-indexed lines. |
-| `recommendation` | `string` | Suggested fix. |
+| `recommendation` | `string` | Suggested fix explanation. |
+| `patch` | `string?` | Clean replacement code snippet or Git diff block. |
 | `confidence` | `"high" \| "medium" \| "low"` | The agent's self-rated confidence. |
 | `triage` | `Triage?` | Set by `triage`. |
 | `revalidation` | `Revalidation?` | Set by `revalidate`. |

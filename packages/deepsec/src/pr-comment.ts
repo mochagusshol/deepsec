@@ -120,6 +120,12 @@ export function renderPrComment(params: {
       lines.push(`**Recommendation:** ${truncate(finding.recommendation, 400)}`);
       lines.push("");
     }
+    if (finding.patch) {
+      lines.push("```");
+      lines.push(truncate(finding.patch, 600));
+      lines.push("```");
+      lines.push("");
+    }
     lines.push("---");
     lines.push("");
   }

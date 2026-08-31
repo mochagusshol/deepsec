@@ -382,6 +382,9 @@ export function configureProviderOverrides(registry: ModelRegistry, cfg: PiAgent
   } else if (provider === "byteplus") {
     override.baseUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
   }
+  if (provider === "byteplus") {
+    override.compat = { supportsDeveloperRole: false };
+  }
   const headers = { ...(cfg.aiHeaders ?? {}) };
   if (cfg.aiCredentialHeader && cfg.aiApiKeyEnv) {
     const credential = process.env[cfg.aiApiKeyEnv];
@@ -515,6 +518,7 @@ function resolvePiModel(registry: ModelRegistry, requested: string, cfg: PiAgent
 function createCustomPassThroughModel(
   modelId: string,
   api: "openai-completions" | "anthropic-messages" | "google-generative-ai",
+  provider?: string,
 ): PiProviderModelConfig {
   return {
     id: modelId,
@@ -530,6 +534,7 @@ function createCustomPassThroughModel(
     },
     contextWindow: 128_000,
     maxTokens: 32_000,
+    ...(provider === "byteplus" ? { compat: { supportsDeveloperRole: false } } : {}),
   };
 }
 
@@ -559,7 +564,7 @@ function registerCustomModelIfNeeded(
     .map(piModelToProviderModelConfig);
   const models = dedupeProviderModels([
     ...existingModels,
-    createCustomPassThroughModel(modelId, api),
+    createCustomPassThroughModel(modelId, api, provider),
   ]);
 
   const baseUrl =
@@ -600,6 +605,7 @@ function registerCustomModelIfNeeded(
     api,
     apiKey,
     models,
+    ...(provider === "byteplus" ? { compat: { supportsDeveloperRole: false } } : {}),
   };
   if (baseUrl) providerConfig.baseUrl = baseUrl;
   if (Object.keys(headers).length > 0) providerConfig.headers = headers;

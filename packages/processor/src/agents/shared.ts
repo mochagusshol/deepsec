@@ -428,6 +428,7 @@ After your investigation, output a JSON block with your findings for EACH file. 
         "description": "Detailed description of the vulnerability, the attack scenario, and evidence from the code",
         "lineNumbers": [10, 15],
         "recommendation": "How to fix this vulnerability",
+        "patch": "Clean replacement code snippet or Git diff block for the remediation (optional)",
         "confidence": "high|medium|low"
       }
     ]
@@ -516,6 +517,7 @@ Use this exact schema:
         "description": "Detailed description of the vulnerability, the attack scenario, and evidence from the code",
         "lineNumbers": [10, 15],
         "recommendation": "How to fix this vulnerability",
+        "patch": "Clean replacement code snippet or Git diff block for the remediation (optional)",
         "confidence": "high"
       }
     ]
@@ -884,6 +886,7 @@ Return ONLY a JSON array in this exact shape, containing one entry per filePath 
         "description": "Detailed description",
         "lineNumbers": [10, 15],
         "recommendation": "How to fix this vulnerability",
+        "patch": "Clean replacement code snippet or Git diff block for the remediation (optional)",
         "confidence": "high"
       }
     ]
@@ -891,7 +894,7 @@ Return ONLY a JSON array in this exact shape, containing one entry per filePath 
 ]
 \`\`\`
 
-\`severity\` must be one of \`CRITICAL\`, \`HIGH\`, \`MEDIUM\`, \`HIGH_BUG\`, or \`BUG\`. \`confidence\` must be one of \`high\`, \`medium\`, or \`low\` (lowercase). \`lineNumbers\` must be an array of numbers. \`title\`, \`description\`, \`recommendation\`, and \`vulnSlug\` must be strings.`;
+\`severity\` must be one of \`CRITICAL\`, \`HIGH\`, \`MEDIUM\`, \`HIGH_BUG\`, or \`BUG\`. \`confidence\` must be one of \`high\`, \`medium\`, or \`low\` (lowercase). \`lineNumbers\` must be an array of numbers. \`title\`, \`description\`, \`recommendation\`, \`patch\`, and \`vulnSlug\` must be strings.`;
 }
 
 function investigateFindingSignature(f: Finding): string {

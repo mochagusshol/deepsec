@@ -178,6 +178,10 @@ function buildDescription(
     finding.recommendation,
   );
 
+  if (finding.patch) {
+    parts.push("", "## Proposed Code Fix", "", "```", finding.patch, "```");
+  }
+
   if (finding.revalidation) {
     parts.push(
       "",
