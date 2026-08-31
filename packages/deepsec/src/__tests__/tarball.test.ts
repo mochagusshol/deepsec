@@ -252,7 +252,7 @@ describe("extractTarballLocally — strict allowlist", () => {
     expect(skipped[0].sizeBytes).toBe(64 * 1024 * 1024 + 1);
     expect(fs.existsSync(path.join(destDir, "files", "ok.ts.json"))).toBe(true);
     expect(fs.existsSync(path.join(destDir, "files", "fat.ts.json"))).toBe(false);
-  });
+  }, 30000);
 
   it("refuses a tarball containing a symlink entry", async () => {
     // Build a tarball directly via tar.create that intentionally

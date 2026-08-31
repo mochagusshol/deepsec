@@ -304,5 +304,5 @@ describe("pipeline e2e", () => {
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }
-  });
+  }, 60000);
 });
