@@ -148,6 +148,7 @@ After your investigation, output a JSON block with your findings for EACH file. 
         "description": "Detailed description of the vulnerability, the attack scenario, and evidence from the code",
         "lineNumbers": [10, 15],
         "recommendation": "How to fix this vulnerability",
+        "patch": "Clean replacement code snippet or Git diff block for the remediation (optional)",
         "confidence": "high|medium|low"
       }
     ]
