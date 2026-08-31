@@ -44,11 +44,12 @@ function providerFromModel(model: string | undefined): string | undefined {
 export function buildAgentConfig(opts: AgentRuntimeOpts): Record<string, unknown> {
   const aiHeaders = parseAiHeaders(opts.aiHeader);
   const customRoute = opts.modelRoute?.mode === "custom" ? opts.modelRoute : undefined;
-  const aiBaseUrl = opts.aiBaseUrl ?? customRoute?.baseUrl;
-  const aiApiKeyEnv = opts.aiApiKeyEnv ?? customRoute?.apiKeyEnv;
+  const directRoute = opts.modelRoute?.mode === "direct" ? opts.modelRoute : undefined;
+  const aiBaseUrl = opts.aiBaseUrl ?? customRoute?.baseUrl ?? directRoute?.baseUrl;
+  const aiApiKeyEnv = opts.aiApiKeyEnv ?? customRoute?.apiKeyEnv ?? directRoute?.apiKeyEnv;
   const hasProviderOverride = Boolean(aiBaseUrl || aiApiKeyEnv || aiHeaders);
   const effectiveProvider =
-    opts.aiProvider ?? customRoute?.provider ?? providerFromModel(opts.model);
+    opts.aiProvider ?? customRoute?.provider ?? directRoute?.provider ?? providerFromModel(opts.model);
   if (hasProviderOverride && !effectiveProvider) {
     throw new Error(
       `Pi provider override flags require --ai-provider or a provider/model --model value.`,

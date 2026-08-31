@@ -47,6 +47,24 @@ describe("buildAgentConfig", () => {
     });
   });
 
+  it("propagates a persisted direct route (e.g. BytePlus) into Pi runtime configuration", () => {
+    expect(
+      buildAgentConfig({
+        model: "byteplus/seed-2-0-lite-260428",
+        modelRoute: {
+          mode: "direct",
+          provider: "byteplus",
+          baseUrl: "https://ark.ap-southeast.bytepluses.com/api/v3",
+          apiKeyEnv: "BYTEPLUS_API_KEY",
+        },
+      }),
+    ).toMatchObject({
+      aiProvider: "byteplus",
+      aiBaseUrl: "https://ark.ap-southeast.bytepluses.com/api/v3",
+      aiApiKeyEnv: "BYTEPLUS_API_KEY",
+    });
+  });
+
   it("maps --thinking-level to both harness config keys", () => {
     expect(
       buildAgentConfig({

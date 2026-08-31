@@ -342,6 +342,9 @@ async function configureRuntimeAuth(runtime: ModelRuntime, cfg: PiAgentConfig): 
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) await runtime.setRuntimeApiKey("openai", openaiKey, offline);
 
+  const byteplusKey = process.env.BYTEPLUS_API_KEY;
+  if (byteplusKey) await runtime.setRuntimeApiKey("byteplus", byteplusKey, offline);
+
   const customProvider = cfg.aiProvider ?? modelProviderFromName(cfg.model);
   if (customProvider && cfg.aiApiKeyEnv) {
     const key = process.env[cfg.aiApiKeyEnv];
@@ -367,11 +370,18 @@ export function configureProviderOverrides(registry: ModelRegistry, cfg: PiAgent
   if (process.env.OPENAI_BASE_URL) {
     registry.registerProvider("openai", { baseUrl: process.env.OPENAI_BASE_URL });
   }
+  if (process.env.BYTEPLUS_BASE_URL) {
+    registry.registerProvider("byteplus", { baseUrl: process.env.BYTEPLUS_BASE_URL });
+  }
 
   const provider = cfg.aiProvider ?? modelProviderFromName(cfg.model);
   if (!provider) return;
   const override: Parameters<ModelRegistry["registerProvider"]>[1] = {};
-  if (cfg.aiBaseUrl) override.baseUrl = cfg.aiBaseUrl;
+  if (cfg.aiBaseUrl) {
+    override.baseUrl = cfg.aiBaseUrl;
+  } else if (provider === "byteplus") {
+    override.baseUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
+  }
   const headers = { ...(cfg.aiHeaders ?? {}) };
   if (cfg.aiCredentialHeader && cfg.aiApiKeyEnv) {
     const credential = process.env[cfg.aiApiKeyEnv];
@@ -502,6 +512,101 @@ function resolvePiModel(registry: ModelRegistry, requested: string, cfg: PiAgent
   );
 }
 
+function createCustomPassThroughModel(
+  modelId: string,
+  api: "openai-completions" | "anthropic-messages" | "google-generative-ai",
+): PiProviderModelConfig {
+  return {
+    id: modelId,
+    name: modelId,
+    api,
+    reasoning: true,
+    input: ["text", "image"],
+    cost: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+    },
+    contextWindow: 128_000,
+    maxTokens: 32_000,
+  };
+}
+
+function registerCustomModelIfNeeded(
+  registry: ModelRegistry,
+  requested: string,
+  cfg: PiAgentConfig,
+): void {
+  const slash = requested.indexOf("/");
+  const provider =
+    slash > 0 ? requested.slice(0, slash) : (cfg.aiProvider ?? modelProviderFromName(cfg.model));
+  const modelId = slash > 0 ? requested.slice(slash + 1) : requested;
+
+  if (!provider) return;
+  if (registry.find(provider, modelId)) return;
+
+  let api: "openai-completions" | "anthropic-messages" | "google-generative-ai" = "openai-completions";
+  if (provider === "anthropic") {
+    api = "anthropic-messages";
+  } else if (provider === "google" || provider === "google-generative-ai") {
+    api = "google-generative-ai";
+  }
+
+  const existingModels = registry
+    .getAll()
+    .filter((model) => model.provider === provider)
+    .map(piModelToProviderModelConfig);
+  const models = dedupeProviderModels([
+    ...existingModels,
+    createCustomPassThroughModel(modelId, api),
+  ]);
+
+  const baseUrl =
+    cfg.aiBaseUrl ??
+    (provider === "byteplus"
+      ? "https://ark.ap-southeast.bytepluses.com/api/v3"
+      : provider === "anthropic"
+        ? process.env.ANTHROPIC_BASE_URL
+        : provider === "openai"
+          ? process.env.OPENAI_BASE_URL
+          : undefined);
+
+  const apiKeyEnv =
+    cfg.aiApiKeyEnv ??
+    (provider === "byteplus"
+      ? "BYTEPLUS_API_KEY"
+      : provider === "anthropic"
+        ? "ANTHROPIC_API_KEY"
+        : "OPENAI_API_KEY");
+
+  const apiKey =
+    (cfg.aiApiKeyEnv && process.env[cfg.aiApiKeyEnv]) ||
+    (provider === "byteplus" ? process.env.BYTEPLUS_API_KEY || process.env.OPENAI_API_KEY : undefined) ||
+    (provider === "openai" ? process.env.OPENAI_API_KEY : undefined) ||
+    (provider === "anthropic" ? process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN : undefined) ||
+    `$${apiKeyEnv}`;
+
+  const headers = { ...(cfg.aiHeaders ?? {}) };
+  if (cfg.aiCredentialHeader && cfg.aiApiKeyEnv) {
+    const credential = process.env[cfg.aiApiKeyEnv];
+    if (credential) {
+      headers[cfg.aiCredentialHeader.name] =
+        cfg.aiCredentialHeader.scheme === "bearer" ? `Bearer ${credential}` : credential;
+    }
+  }
+
+  const providerConfig: Parameters<ModelRegistry["registerProvider"]>[1] = {
+    api,
+    apiKey,
+    models,
+  };
+  if (baseUrl) providerConfig.baseUrl = baseUrl;
+  if (Object.keys(headers).length > 0) providerConfig.headers = headers;
+
+  registry.registerProvider(provider, providerConfig);
+}
+
 export async function resolvePiModelWithDynamicGateway(
   registry: ModelRegistry,
   requested: string,
@@ -510,7 +615,11 @@ export async function resolvePiModelWithDynamicGateway(
   try {
     return resolvePiModel(registry, requested, cfg);
   } catch (err) {
-    registerGatewayModelIfNeeded(registry, requested, cfg);
+    if (isGatewayModelRequest(requested, cfg)) {
+      registerGatewayModelIfNeeded(registry, requested, cfg);
+    } else {
+      registerCustomModelIfNeeded(registry, requested, cfg);
+    }
     try {
       return resolvePiModel(registry, requested, cfg);
     } catch {

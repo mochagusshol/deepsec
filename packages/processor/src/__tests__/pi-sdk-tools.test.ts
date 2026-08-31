@@ -153,9 +153,8 @@ describe("Pi model resolution", () => {
     expect(called).toBe(false);
   });
 
-  it("does not register pass-through Gateway models for explicit custom provider overrides", async () => {
-    process.env.AI_GATEWAY_API_KEY = "vck_test";
-    process.env.OPENAI_BASE_URL = "https://ai-gateway.vercel.sh/v1";
+  it("dynamically registers pass-through models for explicit custom or direct provider models", async () => {
+    process.env.BYTEPLUS_API_KEY = "byteplus_test_key";
     let called = false;
     globalThis.fetch = async () => {
       called = true;
@@ -163,11 +162,14 @@ describe("Pi model resolution", () => {
     };
 
     const registry = await freshRegistry();
-    await expect(
-      resolvePiModelWithDynamicGateway(registry, "acme/nonexistent-model-1", {
-        aiProvider: "acme",
-      }),
-    ).rejects.toThrow(/Pi model not found: acme\/nonexistent-model-1/);
+    const model = await resolvePiModelWithDynamicGateway(registry, "byteplus/seed-2-0-lite-260428", {
+      aiProvider: "byteplus",
+      aiApiKeyEnv: "BYTEPLUS_API_KEY",
+    });
+
+    expect(model.provider).toBe("byteplus");
+    expect(model.id).toBe("seed-2-0-lite-260428");
+    expect(model.api).toBe("openai-completions");
     expect(called).toBe(false);
   });
 
