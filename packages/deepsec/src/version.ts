@@ -66,5 +66,28 @@ export function getDeepsecWorkspaceDependency(): string {
   const isSourceCheckout =
     fs.existsSync(path.join(packageRoot, "src", "cli.ts")) &&
     fs.existsSync(path.join(packageRoot, "build.mjs"));
-  return isSourceCheckout ? pathToFileURL(packageRoot).href : getDeepsecVersion();
+  if (isSourceCheckout) {
+    return pathToFileURL(packageRoot).href;
+  }
+
+  if (process.env.DEEPSEC_DEPENDENCY) {
+    return process.env.DEEPSEC_DEPENDENCY;
+  }
+
+  const version = getDeepsecVersion();
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(packageRoot, "package.json"), "utf-8"),
+    );
+    const repoUrl = typeof pkg.repository === "string" ? pkg.repository : pkg.repository?.url;
+    if (repoUrl && repoUrl.includes("mochagusshol/deepsec")) {
+      return `https://github.com/mochagusshol/deepsec/releases/download/v${version}/deepsec-${version}.tgz`;
+    }
+  } catch {}
+
+  if (fs.existsSync(path.join(packageRoot, "dist", "cli.mjs"))) {
+    return pathToFileURL(packageRoot).href;
+  }
+
+  return version;
 }

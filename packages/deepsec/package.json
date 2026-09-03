@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vercel-labs/deepsec"
+    "url": "https://github.com/mochagusshol/deepsec"
   },
   "homepage": "https://deepsec.sh",
   "type": "module",
