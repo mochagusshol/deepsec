@@ -22,11 +22,13 @@ import {
 } from "../agents/shared.js";
 
 describe("isTransientError", () => {
-  it("flags 5xx, 429, eager_input_streaming, ECONNRESET", () => {
+  it("flags 5xx, 429, eager_input_streaming, ECONNRESET, Connection error", () => {
     expect(isTransientError("HTTP 503 Service Unavailable")).toBe(true);
     expect(isTransientError("HTTP 429 too many requests")).toBe(true);
     expect(isTransientError("Extra inputs are not permitted: eager_input_streaming")).toBe(true);
     expect(isTransientError("ECONNRESET fetch failed")).toBe(true);
+    expect(isTransientError("Pi assistant error: Connection error.")).toBe(true);
+    expect(isTransientError("fetch failed")).toBe(true);
     expect(isTransientError("rate-limit hit")).toBe(true);
     expect(isTransientError("overloaded")).toBe(true);
   });

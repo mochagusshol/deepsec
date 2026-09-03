@@ -293,7 +293,7 @@ export function attributionHeaders(): Record<string, string> {
  */
 export function isTransientError(msg: string): boolean {
   if (classifyQuotaError(msg)) return false;
-  return /\b(5\d\d|429|eager_input_streaming|temporarily unavailable|timeout|ETIMEDOUT|ECONNRESET|overloaded|rate[_ -]?limit)\b/i.test(
+  return /\b(5\d\d|429|eager_input_streaming|temporarily unavailable|timeout|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EHOSTUNREACH|ENOTFOUND|connection|fetch failed|network|socket hang up|overloaded|rate[_ -]?limit)\b/i.test(
     msg,
   );
 }
