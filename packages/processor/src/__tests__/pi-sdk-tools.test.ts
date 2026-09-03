@@ -60,6 +60,37 @@ describe("Pi read-only tools", () => {
     const result = await tool("find").execute("find-1", { pattern: "*.ts" });
     expect(result.content[0].text).toContain("inside.ts");
   });
+
+  it("excludes web_fetch tool by default", () => {
+    const tools = createPiReadOnlyToolDefinitions(root);
+    expect(tools.some((t) => t.name === "web_fetch")).toBe(false);
+  });
+
+  it("includes web_fetch tool when enableWebAccess is true", () => {
+    const tools = createPiReadOnlyToolDefinitions(root, { enableWebAccess: true });
+    expect(tools.some((t) => t.name === "web_fetch")).toBe(true);
+  });
+
+  it("web_fetch rejects non-http/https URLs", async () => {
+    const tools = createPiReadOnlyToolDefinitions(root, { enableWebAccess: true });
+    const webFetch = tools.find((t) => t.name === "web_fetch") as any;
+    await expect(webFetch.execute("fetch-1", { url: "ftp://example.com" })).rejects.toThrow(
+      /Unsupported protocol/,
+    );
+  });
+
+  it("web_fetch handles HTTP fetch responses", async () => {
+    const tools = createPiReadOnlyToolDefinitions(root, { enableWebAccess: true });
+    const webFetch = tools.find((t) => t.name === "web_fetch") as any;
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response("Hello World", { status: 200 });
+    try {
+      const res = await webFetch.execute("fetch-2", { url: "https://example.com/test" });
+      expect(res.content[0].text).toBe("Hello World");
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
 });
 
 describe("Pi model resolution", () => {

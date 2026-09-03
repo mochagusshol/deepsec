@@ -82,6 +82,7 @@ interface PiAgentConfig {
   aiHeaders?: Record<string, string>;
   aiCredentialHeader?: { name: string; scheme: "bearer" | "raw" };
   thinkingLevel?: string;
+  enableWebAccess?: boolean;
 }
 
 type PiModel = ReturnType<ModelRegistry["getAll"]>[number];
@@ -233,9 +234,93 @@ async function guardedGlob(
   return results;
 }
 
-export function createPiReadOnlyToolDefinitions(projectRoot: string): ToolDefinition<any, any>[] {
+export function createPiWebFetchToolDefinition(): ToolDefinition<any, any> {
+  return {
+    name: "web_fetch",
+    label: "Web Fetch",
+    description: "Fetch content from a public web page or URL over HTTP(S).",
+    parameters: {
+      type: "object",
+      properties: {
+        url: {
+          type: "string",
+          description: "The HTTP or HTTPS URL to fetch content from.",
+        },
+      },
+      required: ["url"],
+    },
+    execute: async (_toolCallId: string, params: { url: string }) => {
+      const urlStr = params?.url;
+      if (!urlStr || typeof urlStr !== "string") {
+        throw new Error("URL parameter must be a non-empty string");
+      }
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(urlStr);
+      } catch {
+        throw new Error(`Invalid URL format: ${urlStr}`);
+      }
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+        throw new Error(`Unsupported protocol: ${parsedUrl.protocol}. Only http: and https: are allowed.`);
+      }
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch(parsedUrl.toString(), {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "deepsec-pi-agent/1.0",
+            Accept: "text/html,application/xhtml+xml,application/json,text/plain;q=0.9,*/*;q=0.8",
+          },
+        });
+        clearTimeout(timer);
+        if (!response.ok) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `HTTP error ${response.status} ${response.statusText} fetching ${urlStr}`,
+              },
+            ],
+            details: {},
+          };
+        }
+        const text = await response.text();
+        const maxLength = 50000;
+        const truncated = text.length > maxLength ? text.slice(0, maxLength) + "\n...[content truncated]" : text;
+        return {
+          content: [
+            {
+              type: "text",
+              text: truncated,
+            },
+          ],
+          details: {},
+        };
+      } catch (err) {
+        clearTimeout(timer);
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Failed to fetch URL ${urlStr}: ${msg}`,
+            },
+          ],
+          details: {},
+        };
+      }
+    },
+  } as unknown as ToolDefinition<any, any>;
+}
+
+export function createPiReadOnlyToolDefinitions(
+  projectRoot: string,
+  options?: { enableWebAccess?: boolean },
+): ToolDefinition<any, any>[] {
   const guard = createRootGuard(projectRoot);
-  return [
+  const tools: ToolDefinition<any, any>[] = [
     createReadToolDefinition(projectRoot, {
       operations: {
         readFile: (absolutePath) =>
@@ -268,10 +353,18 @@ export function createPiReadOnlyToolDefinitions(projectRoot: string): ToolDefini
           fs.promises.readdir(assertInsideProjectRoot(guard, absolutePath)),
       },
     }),
-  ] as ToolDefinition<any, any>[];
+  ];
+
+  if (options?.enableWebAccess) {
+    tools.push(createPiWebFetchToolDefinition());
+  }
+
+  return tools;
 }
 
 function readConfig(config: Record<string, unknown>): PiAgentConfig {
+  const envWebAccess =
+    process.env.DEEPSEC_PI_WEB_ACCESS === "1" || process.env.DEEPSEC_PI_WEB_ACCESS === "true";
   return {
     model: typeof config.model === "string" ? config.model : undefined,
     maxTurns: typeof config.maxTurns === "number" ? config.maxTurns : undefined,
@@ -287,6 +380,12 @@ function readConfig(config: Record<string, unknown>): PiAgentConfig {
         ? (config.aiCredentialHeader as { name: string; scheme: "bearer" | "raw" })
         : undefined,
     thinkingLevel: typeof config.thinkingLevel === "string" ? config.thinkingLevel : undefined,
+    enableWebAccess:
+      typeof config.enableWebAccess === "boolean"
+        ? config.enableWebAccess
+        : typeof config.webAccess === "boolean"
+          ? config.webAccess
+          : envWebAccess,
   };
 }
 
@@ -383,7 +482,7 @@ export function configureProviderOverrides(registry: ModelRegistry, cfg: PiAgent
     override.baseUrl = "https://ark.ap-southeast.bytepluses.com/api/v3";
   }
   if (provider === "byteplus") {
-    override.compat = { supportsDeveloperRole: false };
+    (override as Record<string, any>).compat = { supportsDeveloperRole: false };
   }
   const headers = { ...(cfg.aiHeaders ?? {}) };
   if (cfg.aiCredentialHeader && cfg.aiApiKeyEnv) {
@@ -667,6 +766,10 @@ async function createPiSession(projectRoot: string, cfg: PiAgentConfig): Promise
     terminal: { showTerminalProgress: false },
     images: { blockImages: true },
   });
+  const systemNote = cfg.enableWebAccess
+    ? "You are running inside the Pi harness for deepsec. Use source inspection and web fetch tools when needed for verification. Do not run the target application or attempt exploitation. Return only the requested JSON object."
+    : DEEPSEC_SYSTEM_NOTE;
+
   const resourceLoader = new DefaultResourceLoader({
     cwd: projectRoot,
     agentDir,
@@ -676,7 +779,7 @@ async function createPiSession(projectRoot: string, cfg: PiAgentConfig): Promise
     noPromptTemplates: true,
     noThemes: true,
     noContextFiles: true,
-    appendSystemPrompt: [DEEPSEC_SYSTEM_NOTE],
+    appendSystemPrompt: [systemNote],
   });
   await resourceLoader.reload();
 
@@ -690,7 +793,7 @@ async function createPiSession(projectRoot: string, cfg: PiAgentConfig): Promise
     model,
     thinkingLevel: (cfg.thinkingLevel ?? DEFAULT_THINKING_LEVEL) as never,
     tools: DEFAULT_TOOLS,
-    customTools: createPiReadOnlyToolDefinitions(projectRoot),
+    customTools: createPiReadOnlyToolDefinitions(projectRoot, { enableWebAccess: cfg.enableWebAccess }),
   });
 
   return {
